@@ -21,24 +21,26 @@ require File.expand_path('../../spec_helper', __FILE__)
 
 module Selenium
   module WebDriver
-    module Remote
-      describe Bridge do
-        describe '.handshake' do
-          it 'supports responses with "value" capabilities' do
-            http_client = WebDriver::Remote::Http::Default.new
-            allow(http_client).to receive(:request).and_return('value' => {'sessionId' => true, 'value' => {}})
+    module Edge
+      describe Driver do
+        let(:resp)    { {'sessionId' => 'foo', 'value' => Remote::Capabilities.internet_explorer.as_json} }
+        let(:service) { instance_double(Service, start: nil, uri: 'http://example.com') }
+        let(:caps)    { Remote::Capabilities.internet_explorer }
+        let(:http)    { instance_double(Remote::Http::Default, call: resp).as_null_object }
 
-            Bridge.handshake(http_client: http_client, desired_capabilities: Capabilities.new)
-          end
+        before do
+          allow(Remote::Capabilities).to receive(:internet_explorer).and_return(caps)
+          allow(Service).to receive(:binary_path).and_return('/foo')
+          allow(Service).to receive(:new).and_return(service)
+        end
 
-          it 'supports responses with "capabilities" capabilities' do
-            http_client = WebDriver::Remote::Http::Default.new
-            allow(http_client).to receive(:request).and_return('value' => {'sessionId' => true, 'capabilities' => {}})
+        it 'accepts server URL' do
+          expect(Service).not_to receive(:new)
+          expect(http).to receive(:server_url=).with(URI.parse('http://example.com:4321'))
 
-            Bridge.handshake(http_client: http_client, desired_capabilities: Capabilities.new)
-          end
+          Driver.new(http_client: http, url: 'http://example.com:4321')
         end
       end
-    end # Remote
+    end # Edge
   end # WebDriver
 end # Selenium
